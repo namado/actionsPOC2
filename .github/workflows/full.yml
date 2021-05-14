@@ -1,0 +1,63 @@
+name: CI/CD
+
+# Controls when the action will run.
+on:
+
+  pull_request:
+    types: [edited, opened, synchronize, reopened]
+  pull_request_review:
+    types: [submitted]
+  workflow_dispatch:
+
+jobs:
+  PR_Checks:
+    runs-on: ubuntu-latest
+    name: PR Validations
+    steps:
+      - name: step 1
+        run: echo step 1
+
+  Comment_Checks: #will only run successfully if triggered by an edit of the pull request comment
+    if: ${{github.event.action == 'edited'}}
+    runs-on: ubuntu-latest
+    name: Comment_Checks
+    steps:
+      - name: Edit
+        run: |
+          echo Edit
+          echo ${{github.event.action}}
+          exit 0
+
+  Review_Check: #will only run successfully if triggered by a pull request review
+    runs-on: ubuntu-latest
+    name: Review_Check
+    steps:
+      - name: step 1.1 - Not Ready
+        if: ${{github.event.action != 'submitted'}}
+        run: |
+          echo step 1.1 - Not Ready
+          echo ${{github.event.action}}
+          exit 1
+      - name: step 1.1 - Ready
+        if: ${{github.event.action == 'submitted'}}
+        run: |
+          echo step 1.1 - Ready
+          echo ${{github.event.action}}
+          exit 0
+
+  Unit_Test: #run after step 1 and 1.1 if successful
+    runs-on: ubuntu-latest
+    name: Test
+    if: ${{github.event.action == 'submitted'}}
+    steps:
+      - name: Unit_Test
+        run: echo Unit_Test
+    needs: [PR_Checks, Comment_Checks]
+
+  Build: #run after step 2 if successful
+    runs-on: ubuntu-latest
+    name: Build
+    steps:
+      - name: Build
+        run: echo Build
+    needs: Unit_Test
